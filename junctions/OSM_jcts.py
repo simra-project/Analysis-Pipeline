@@ -46,7 +46,7 @@ def main(region, buffer_size):
 
     bufferedJunctionsDf = bufferJcts.bufferize(junctionsdf, buffer_size)
 
-    nonIsolatedJunctions, isolatedJunctions = clusterJcts.cluster(bufferedJunctionsDf, utils.paramDict[region]["neighbour_param"], utils.paramDict[region]["sorting_params"])
+    nonIsolatedJunctions, isolatedJunctions = clusterJcts.cluster(region, bufferedJunctionsDf)
 
     completeJunctions = tidyData_Jcts.tidyItUp(region, utils.paramDict[region]["centroid"], nonIsolatedJunctions, isolatedJunctions, buffer_size, utils.paramDict[region]["sorting_params"])
 

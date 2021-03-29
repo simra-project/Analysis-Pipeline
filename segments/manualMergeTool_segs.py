@@ -72,11 +72,11 @@ import utils
 
 def update_clust(small_buf_clstrs, large_buf_clstr, region):
 
-    small_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_small_buf_inconsist_{region}"))
+    small_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_small_buf_inconsist_{region}", "pickled_data"))
 
-    large_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_large_buf_inconsist_{region}"))
+    large_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_large_buf_inconsist_{region}", "pickled_data"))
 
-    consistent_clusters = pd.read_pickle(utils.getSubDirPath(f"segs_consistent_clusters_{region}"))
+    consistent_clusters = pd.read_pickle(utils.getSubDirPath(f"segs_consistent_clusters_{region}", "pickled_data"))
 
     # 'small_buf_clstrs' is a list of clusters having emerged in the small_buf-solution; remove the rows
     # corresponding to these clusters from 'small_buf_inconsist' as the large_buf-solution for the same
@@ -107,29 +107,22 @@ def update_clust(small_buf_clstrs, large_buf_clstr, region):
     mapping.runAllMapTasks(region, small_buf_inconsist, large_buf_inconsist)
 
     # Pickle the three data sets for further editing.
-    # Find out if we're operating in 'segments'-subdirectory or its parent directory,
-    # PyPipeline_ (background: we want to write all files related to segments to the
-    # segments subdirectory)
-
-    cwd = os.getcwd()
-
-    in_target_dir = utils.inTargetDir(cwd) # bool
 
     # Write small_buf_inconsist pickle
 
-    small_buf_inconsist_path = f"segs_small_buf_inconsist_{region}" if in_target_dir else utils.getSubDirPath(f"segs_small_buf_inconsist_{region}")
+    small_buf_inconsist_path = utils.getSubDirPath(f"segs_small_buf_inconsist_{region}", "pickled_data")
 
     small_buf_inconsist.to_pickle(small_buf_inconsist_path)
 
     # Write large_buf_inconsist pickle
 
-    large_buf_inconsist_path = f"segs_large_buf_inconsist_{region}" if in_target_dir else utils.getSubDirPath(f"segs_large_buf_inconsist_{region}")
+    large_buf_inconsist_path = utils.getSubDirPath(f"segs_large_buf_inconsist_{region}", "pickled_data")
 
     large_buf_inconsist.to_pickle(large_buf_inconsist_path)
 
     # Write consistent clusters pickle
 
-    consistent_clusters_path = f"segs_consistent_clusters_{region}" if in_target_dir else utils.getSubDirPath(f"segs_consistent_clusters_{region}")
+    consistent_clusters_path = utils.getSubDirPath(f"segs_consistent_clusters_{region}", "pickled_data")
 
     consistent_clusters.to_pickle(consistent_clusters_path)
 
@@ -140,11 +133,11 @@ def delete_clust(small_buf_clstr, region):
 
     # small_buf_inconsist: will be modified
 
-    small_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_small_buf_inconsist_{region}"))
+    small_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_small_buf_inconsist_{region}", "pickled_data"))
 
     # large_buf_inconsist: required for mapping the result
 
-    large_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_large_buf_inconsist_{region}"))
+    large_buf_inconsist = pd.read_pickle(utils.getSubDirPath(f"segs_large_buf_inconsist_{region}", "pickled_data"))
 
     # Delete the specified cluster
 
@@ -163,13 +156,17 @@ def delete_clust(small_buf_clstr, region):
 
 def save_result (region):
 
-    small_buf_accepted = pd.read_pickle(f'small_buf_inconsist_{region}')
+    small_buf_accepted = pd.read_pickle(utils.getSubDirPath(f"segs_small_buf_inconsist_{region}", "pickled_data"))
 
-    consistent_plus_accepted_large_solutions = pd.read_pickle(f'consistent_clusters_{region}')
+    consistent_plus_accepted_large_solutions = pd.read_pickle(utils.getSubDirPath(f"segs_consistent_clusters_{region}", "pickled_data"))
 
     complete_df = pd.concat([small_buf_accepted, consistent_plus_accepted_large_solutions], ignore_index = True, sort = False)
 
-    complete_df.to_csv(f'manual_merging_res_{region}_{datetime.date.today()}.csv', index=False, sep="|")
+    file_name = f'manual_merging_res_{region}_{datetime.date.today()}.csv'
+
+    path = utils.getSubDirPath(file_name, 'csv_data')
+
+    complete_df.to_csv(path, index=False, sep="|")
 
 
 

@@ -93,12 +93,6 @@ def meta_assist (region, small_buf, large_buf):
     #                        large_buf per default, check if we already have the
     #                        data and only compute if we don't.
 
-    # Are we operating in target directory (= 'segments')?
-
-    cwd = os.getcwd()
-
-    in_target = utils.inTargetDir(cwd)
-
     # Get data frames for small_buf (more conservative buffer parameter) and large_buf (more liberal buffer parameter)
     # => from pickle (PyPipeline_/segments/pickled_data) or computed
 
@@ -109,17 +103,7 @@ def meta_assist (region, small_buf, large_buf):
 
     if (utils.fileExists(small_buf_file)):
 
-        if in_target:
-
-            small_buf_path = utils.getSubDirPath(small_buf_file, "pickled_data")
-
-        else:
-
-            sub_one = utils.getSubDirPath(small_buf_file, "pickled_data")
-
-            sub_two = utils.getSubDirPath(sub_one)
-
-            small_buf_path = sub_two
+        small_buf_path = utils.getSubDirPath(small_buf_file, "pickled_data")
 
         small_buf = pd.read_pickle(small_buf_path)
 
@@ -132,17 +116,7 @@ def meta_assist (region, small_buf, large_buf):
 
     if (utils.fileExists(large_buf_file)):
 
-        if in_target:
-
-            large_buf_path = utils.getSubDirPath(large_buf_file, "pickled_data")
-
-        else:
-
-            sub_one = utils.getSubDirPath(large_buf_file, "pickled_data")
-
-            sub_two = utils.getSubDirPath(sub_one)
-
-            large_buf_path = sub_two
+        large_buf_path = utils.getSubDirPath(large_buf_file, "pickled_data")
 
         large_buf = pd.read_pickle(large_buf_path)
 
@@ -186,18 +160,18 @@ def meta_assist (region, small_buf, large_buf):
 
     # Write small_buf_inconsist pickle
 
-    small_buf_inconsist_path = f"segs_small_buf_inconsist_{region}" if in_target_dir else utils.getSubDirPath(f"segs_small_buf_inconsist_{region}")
+    small_buf_inconsist_path = utils.getSubDirPath(f"segs_small_buf_inconsist_{region}", "pickled_data")
 
     small_buf_inconsist.to_pickle(small_buf_inconsist_path)
 
     # Write large_buf_inconsist pickle
 
-    large_buf_inconsist_path = f"segs_large_buf_inconsist_{region}" if in_target_dir else utils.getSubDirPath(f"segs_large_buf_inconsist_{region}")
+    large_buf_inconsist_path = utils.getSubDirPath(f"segs_large_buf_inconsist_{region}", "pickled_data")
 
     large_buf_inconsist.to_pickle(large_buf_inconsist_path)
 
     # Write consistent clusters pickle
 
-    consistent_clusters_path = f"segs_consistent_clusters_{region}" if in_target_dir else utils.getSubDirPath(f"segs_consistent_clusters_{region}")
+    consistent_clusters_path = utils.getSubDirPath(f"segs_consistent_clusters_{region}", "pickled_data")
 
     small_buf_consist.to_pickle(consistent_clusters_path)

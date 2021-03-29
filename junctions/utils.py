@@ -71,7 +71,6 @@ def getSubDirPath (file_, subdir):
 
     return file_path
 
-
 def fileExists (file_name):
 
     path = getSubDirPath(file_name,'pickled_data')

@@ -132,7 +132,7 @@ def metaFunc(bbox, region):
     # (Otherwise, there might be no file to read.)
     # TODO is this reasonable?
 
-    subdir_path = utils.getSubDirPath(f"{region}_junctions_for_segs.csv", 'junctions')
+    subdir_path = utils.getJunctionsDirPath(f"{region}_junctions_for_segs.csv")
 
     # Notify user if junctions_for_segs.csv is unavailable as the junctions project hasn't been
     # executed before the segments fraction

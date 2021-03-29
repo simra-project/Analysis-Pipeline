@@ -95,6 +95,6 @@ def runAllMapTasks (region, bbCentroid, oddballs, normies, neighbourParam):
 
     file_name = f'{region}-segs-map_np={neighbourParam}_{datetime.date.today()}.html'
 
-    path = file_name if in_target_dir else utils.getSubDirPath(file_name)
+    path = utils.getSubDirPath(file_name, "html_maps")
 
     myMap.save(path)

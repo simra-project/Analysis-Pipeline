@@ -5,15 +5,9 @@ from collections import Counter
 
 import numpy as np
 
+import utils
+
 # ## Cluster junctions
-
-# This implementation is following a brute-force approach with O(n^2) complexity, more elegantly it could be done with a [union find algo](https://medium.com/jeremy-gottfrieds-tech-blog/weighted-union-find-a-fascinating-and-elegant-algorithm-ae61aa0ab1e1). (See also the [Algorithms, Pt. I course by Princeton University on Coursera](https://www.coursera.org/learn/algorithms-part1#enroll))
-
-# ***UPDATE: we're not at n^2 anymore!!!***
-# 
-# How so, you ask? Well:
-# - firstly, we sort the df according to geospatial location. There's multiple strategies for doing this: a) according to upper left corner of polygon (minx, maxy); b) according to polygon centroid, c) simple: in the case of junction just lat/lon.
-# - then we're only looking at the X data points above/below each junction to find neighbours.
 
 #*******************************************************************************************************************
 # (1) Define functionality for determining a junction's neighbours
@@ -45,15 +39,18 @@ def sharedSquare(lst1, lst2):
 
 # c) Put it all together to assign its neighbours to each junction
 
-def neighbourFindingWrapper(junctionsdf, neighbourParam):
+def neighbourFindingWrapper(junctionsdf):
 
     def getNeighbours(outerInd, outerPoly, outerHighways):
     
         neighbours = []
+
+        # Generously look at the 150 rows above and below the current row 
+        # when looking for neighbours (in the df sorted by lat/lon)
+
+        lower = max(outerInd-150, 0)
         
-        lower = max(outerInd-neighbourParam, 0)
-        
-        upper = min(outerInd+neighbourParam, len(junctionsdf)-1)
+        upper = min(outerInd+150, len(junctionsdf)-1)
         
         # Use buffer trick if polygon is invalid
         # https://stackoverflow.com/questions/13062334/polygon-intersection-error-in-shapely-shapely-geos-topologicalerror-the-opera
@@ -62,11 +59,9 @@ def neighbourFindingWrapper(junctionsdf, neighbourParam):
             
             outerPoly = outerPoly.buffer(0)
         
-        for i in range(lower, upper+1):
-        
-            innerID = junctionsdf.at[i,'id']
+        for innerInd in range(lower, upper+1):
             
-            innerPoly = junctionsdf.at[i,'poly_geometry']
+            innerPoly = junctionsdf.at[innerInd,'poly_geometry']
             
             # Use buffer trick if polygon is invalid
             
@@ -74,19 +69,21 @@ def neighbourFindingWrapper(junctionsdf, neighbourParam):
             
                 innerPoly = innerPoly.buffer(0)
             
-            innerHighways = junctionsdf.at[i,'highwaynames']
+            innerHighways = junctionsdf.at[innerInd,'highwaynames']
                 
             if outerPoly != innerPoly:
                     
                 squareInCommon = sharedSquare(outerHighways, innerHighways)
                     
-                if largeIntersection(outerPoly, innerPoly): neighbours.append(innerID)
+                if largeIntersection(outerPoly, innerPoly): neighbours.append(innerInd)
                     
-                elif  (outerPoly.intersects(innerPoly) and squareInCommon): neighbours.append(innerID)                  
+                elif  (outerPoly.intersects(innerPoly) and squareInCommon): neighbours.append(innerInd)                
                         
         return neighbours
 
     junctionsdf['neighbours'] = [x for x in starmap(getNeighbours, list(zip(junctionsdf.index,junctionsdf['poly_geometry'],junctionsdf['highwaynames'])))]
+
+    
 
     return junctionsdf
 
@@ -101,12 +98,6 @@ def splitDf (junctionsdf):
 
     nonIsolatedJunctions = junctionsdf.loc[junctionsdf['neighbours'].map(lambda d: len(d)) > 0, :].copy()
 
-    # Sort by location once more to make the clustering process we'll perform on this df more efficient.
-
-    nonIsolatedJunctions.sort_values(by=['lat','lon'],inplace=True)
-
-    nonIsolatedJunctions.reset_index(inplace=True, drop=True)
-
     ## b) Deal with isolatedJunctions
 
     isolatedJunctions = junctionsdf.loc[junctionsdf['neighbours'].map(lambda d: len(d)) == 0, :].copy()
@@ -120,59 +111,78 @@ def splitDf (junctionsdf):
 #*******************************************************************************************************************
 # (3) Functionality for performing the actual clustering on nonIsolatedJunctions
 
-def expandNeighbours(df, neighbourParam, clusterInd, outerLoopInd, currNeighbours, included):
-    
-    lower = max(outerLoopInd-neighbourParam, 0)
-    
-    current = lower
-    
-    upper = min(outerLoopInd+neighbourParam, len(df)-1)
-    
-    members = [outerLoopInd]
-    
-    while current < upper:
+def expandNeighbours(df, clusterInd, outerLoopInd, currNeighbours, included):
 
-        theseNeighbours = []
-        
-        theseNeighbours.extend(df.at[current,'neighbours'])
-        
-        theseNeighbours.append(df.at[current,'id'])
-            
-        # Expand the list of neighbours and neighbours' neighbours as
-        # we iterate through the df.
+    # Create a queue based on currNeighbours (the neighbours of the data point in the
+    # row considered in the outer loop).
+
+    neighbour_queue = []
+
+    for elem in currNeighbours:
+
+        neighbour_queue.append(elem)
     
-        if not(current in members) and any(x in currNeighbours for x in theseNeighbours):
+    while len(neighbour_queue) != 0:
 
-            currNeighbours.extend(theseNeighbours)
-        
-            # If another row belonging to the cluster has been found, 
-            # assign it the cluster id ...
-        
-            df.at[current,'neighbour_cluster'] = clusterInd
-            
-            # ... and append the row's index to the list of included
-            # rows.
-            
-            included.append(current)
-            
-            # add the row's index to the cluster member list to avoid 
-            # getting caught in an endless loop
-            
-            members.append(current)
-            
-            # TRESET HE INDEX TO 0 SO WE'RE STARTING TO ITERATE THROUGH
-            # THE DF FROM THE TOP AGAIN EVERY TIME A NEIGHBOUR CLUSTER
-            # HAS BEEN EXPANDED BY ONE MORE JUNCTION
+        print("Queue contents before popping: ")
 
-            current = lower
-                
-        else:
-                
-            current += 1
+        for q in neighbour_queue:
+
+            print(q)
+
+        # Remove first element from queue
+
+        nextNeighbour = neighbour_queue.pop(0)
+
+        print("Queue contents after popping: ")
+
+        for q in neighbour_queue:
+
+            print(q)
+
+        # Add nextNeighbour to the list of included data points so it won't be
+        # considered in the outer loop
+
+        included.append(nextNeighbour)
+
+        # Assign the cluster nr. to nextNeighbour
+
+        df.at[nextNeighbour, 'neighbour_cluster'] = clusterInd
+
+        # Grab the next neighbour's neighbours
+
+        nextNeighsNeighs = df.at[nextNeighbour,'neighbours']
+
+        print(type(nextNeighsNeighs))
+
+        print(type(currNeighbours))
+
+        # Find any distinct neighbours of this neighbour (that aren't already contained in the cluster)
+
+        distinctNewNeighs = [x for x in nextNeighsNeighs if x not in currNeighbours]
+        
+        # If any distinct new neighbours have been found, add them to the cluster members list (currNeighbours)
+        # as well as the queue
+
+        if distinctNewNeighs != []:
+
+            currNeighbours.extend(distinctNewNeighs)
+
+            neighbour_queue.extend(distinctNewNeighs)
+
+        print("Queue contents after extending: ")
+
+        for q in neighbour_queue:
+
+            print(q)
+
+    print("Finished with queue!")
         
     return included
 
-def clusterNeighbours(df, neighbourParam):
+# --------------------------------------------------------------------------------
+
+def clusterNeighbours(df):
     
     clusterInd = 0
     
@@ -182,8 +192,6 @@ def clusterNeighbours(df, neighbourParam):
     
     for ind in df.index:
         
-        currNeighbours = []
-        
         # Do not look at rows we've already assigned clusters to 
         # (at least not in this - the outer - loop)
         
@@ -192,10 +200,12 @@ def clusterNeighbours(df, neighbourParam):
             continue
 
         else:
+
+            currNeighbours = []
             
             # Assign the current cluster index to the row.
         
-            df.at[ind,'neighbour_cluster'] = int(clusterInd)
+            df.at[ind,'neighbour_cluster'] = clusterInd
             
             # Add the current row's index to the list of rows that were already visited.
             
@@ -207,13 +217,13 @@ def clusterNeighbours(df, neighbourParam):
             
             # Add the row's index to the neighbour list too.
             
-            currNeighbours.append(df.at[ind,'id'])
+            currNeighbours.append(ind)
             
             #if not (currNeighbours == [] or np.isnan(currNeighbours)):
         
             # Now iterate through the df again to find the neighbours' neighbours.
 
-            included = expandNeighbours(df, neighbourParam, clusterInd, ind, currNeighbours, included)
+            included = expandNeighbours(df, clusterInd, ind, list(set(currNeighbours)), included)
                     
             # No more extended neighbours, up the cluster numbers
         
@@ -367,11 +377,13 @@ def clusterCorrection(nonIsolatedJunctions):
 #*******************************************************************************************************************
 # (X) Call all the functions required for clustering in logical order.
 
-def cluster (junctionsdf, neighbourParam, sortingParams):
+def cluster (region, junctionsdf):
+
+    sortingParams = utils.paramDict[region]["sorting_params"]
 
     # I.) Determine which junctions have neighbours and which do not 
 
-    junctionsdf = neighbourFindingWrapper(sortByLocation(junctionsdf, sortingParams), neighbourParam)
+    junctionsdf = neighbourFindingWrapper(sortByLocation(junctionsdf, sortingParams))
 
     # II.) Split the df according to 'junction has/does not have neighbours'
 
@@ -379,7 +391,7 @@ def cluster (junctionsdf, neighbourParam, sortingParams):
 
     # III.) Cluster the nonIsolatedJunctions
 
-    nonIsolatedJunctions = clusterNeighbours(nonIsolatedJunctions, neighbourParam)
+    nonIsolatedJunctions = clusterNeighbours(nonIsolatedJunctions)
 
     # IV.) Separate undesired merges
 

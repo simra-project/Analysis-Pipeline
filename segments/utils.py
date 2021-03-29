@@ -71,30 +71,31 @@ def inTargetDir (cwd):
 
     return (cwd_parts[len(cwd_parts)-1] == 'segments')
 
-def getSubDirPath (file_, subdir = 'segments'):
+def getSubDirPath (file_, subdir):
 
     # Concatenate path using os library so system can tell which part of the
     # path is a directory and which is a file name.
 
-    subdir_path = os.path.join(subdir, file_)
+    curr_dir = os.path.abspath(os.path.dirname(__file__))
 
-    return subdir_path
+    file_path = os.path.join(curr_dir, subdir, file_)
+
+    return file_path
+
+def getJunctionsDirPath (file_):
+
+    # Below highly complex but hopefully effective command for navigating to the segments'-
+    # directories 'sibling'-directory, 'junctions'.
+
+    jcts_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'junctions'))
+
+    file_path = os.path.join(jcts_dir, "csv_data", file_)
+
+    return file_path
 
 def fileExists (file_name):
 
-    cwd = os.getcwd()
+    path = getSubDirPath(file_name,'pickled_data')
 
-    if (inTargetDir(cwd)):
-
-        path = getSubDirPath(file_name,'pickled_data')
-
-        return os.path.isfile(path)
-
-    else:
-
-        sub_one = getSubDirPath(file_name, 'pickled_data')
-
-        sub_two = getSubDirPath(sub_one)
-
-        return os.path.isfile(sub_two)
+    return os.path.isfile(path)
 
