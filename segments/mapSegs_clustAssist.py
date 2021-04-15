@@ -18,7 +18,7 @@ import random
 
 import os
 
-import utils # internal import
+import utils_segs as utils # internal import
 
 #*******************************************************************************************************************
 # (*) Scatter marker location to prevent overlay

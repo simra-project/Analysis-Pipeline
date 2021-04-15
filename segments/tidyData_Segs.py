@@ -15,7 +15,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 import mapSegs
 
-import utils
+import utils_segs as utils
 
 def tidyItUp(region, oddballs, normies):
 
@@ -37,13 +37,23 @@ def tidyItUp(region, oddballs, normies):
 
     oddballs = oddballs.drop(["index","lats","lons","coords","oddball","poly_geometry","poly_vertices_lats","poly_vertices_lons","neighbours"], axis=1)
 
-    oddballs = oddballs.groupby('neighbour_cluster', as_index = False).agg({'id': 'sum', 'highwayname': lambda x: ', '.join(map(str, x)), 'highwaytype': lambda x: ', '.join(map(str, x)), 'highwaylanes': lambda x: ', '.join(map(str, x)),'lanes:backward': lambda x: ', '.join(map(str, x)), 'segment_nodes_ids': 'sum', 'seg_length': 'sum'})
+    oddballs = oddballs.groupby('neighbour_cluster', as_index = False).agg({'id': 'sum', 'highwayname': 'sum', 'highwaytype': 'sum', 'highwaylanes': 'sum','lanes:backward': 'sum', 'segment_nodes_ids': 'sum', 'seg_length': 'sum'})
+
+    # Remove duplicates from columns
+
+    oddballs['highwayname'] = oddballs['highwayname'].apply(lambda x: list(set(x)))
+
+    oddballs['highwaytype'] = oddballs['highwaytype'].apply(lambda x: list(set(x)))
+
+    oddballs['highwaylanes'] = oddballs['highwaylanes'].apply(lambda x: list(set(x)))
+
+    oddballs['lanes:backward'] = oddballs['lanes:backward'].apply(lambda x: list(set(x)))
 
     oddballMerge = pd.merge(oddballs, oddballClusters, on='neighbour_cluster')
 
     ## c) Plot !
 
-    mapSegs.runAllMapTasks (region, bb_centroid, oddballMerge, normies, neighbour_param)
+    myMap = mapSegs.runAllMapTasks (region, bb_centroid, oddballMerge, normies, neighbour_param)
 
     ## d) Extract the vertices of shapes. This involves our delightful procedure of exploding MultiPolygons into their
     ##    components because they suck and we don't want them in our df!!!!
@@ -114,4 +124,4 @@ def tidyItUp(region, oddballs, normies):
 
     completeSegments.loc[:,'poly_vertices_lons'] = completeSegments['poly_vertices_lons'].map(lambda x: list(x))
 
-    return completeSegments
+    return completeSegments, myMap

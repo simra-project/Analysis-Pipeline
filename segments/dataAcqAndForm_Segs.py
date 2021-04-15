@@ -11,7 +11,7 @@ import requests
 import numpy as np
 import sys
 
-import utils
+import utils_segs as utils
 
 # ********************************************************************************************************************
     
@@ -98,6 +98,16 @@ def getHighwayDf(ways):
     # COMMENT OUT TO PREVENT THIS
 
     highwaydf['id'] = highwaydf['id'].map(lambda i: [i])
+
+    # NEW AS OF 15/04: also map other properties to list so they can be aggregated without duplicates
+
+    highwaydf['name'] = highwaydf['name'].map(lambda i: [i])
+
+    highwaydf['highway'] = highwaydf['highway'].map(lambda i: [i])
+
+    highwaydf['lanes'] = highwaydf['lanes'].map(lambda i: [i])
+
+    highwaydf['lanes:backward'] = highwaydf['lanes:backward'].map(lambda i: [i])
 
     # *********************************************************************
     

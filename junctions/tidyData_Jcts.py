@@ -86,7 +86,7 @@ def explodeAndConcat(nonIsolatedMerge, isolatedJunctions):
     return completeJunctions
     
 
-def tidyItUp(region, bbCentroid, nonIsolatedJunctions, isolatedJunctions, bufferSize, neighbourParam):
+def tidyItUp(region, segMap, bbCentroid, nonIsolatedJunctions, isolatedJunctions, bufferSize, neighbourParam):
 
     # ********************************************************************************************************************
 
@@ -106,13 +106,21 @@ def tidyItUp(region, bbCentroid, nonIsolatedJunctions, isolatedJunctions, buffer
 
     nonIsolatedJunctions = nonIsolatedJunctions.groupby('neighbour_cluster', as_index = False).agg({'id': 'sum', 'lat': lambda x: ', '.join(map(str, x)), 'lon': lambda x: ', '.join(map(str, x)), 'highwayids': 'sum', 'highwaynames': 'sum', 'highwaytypes': 'sum', 'highwaylanes': 'sum','highwaylanesBw': 'sum', 'neighbours': 'sum'})   
 
+    nonIsolatedJunctions['highwaynames'] = nonIsolatedJunctions['highwaynames'].apply(lambda x: list(set(x)))
+
+    nonIsolatedJunctions['highwaytypes'] = nonIsolatedJunctions['highwaytypes'].apply(lambda x: list(set(x)))
+
+    nonIsolatedJunctions['highwaylanes'] = nonIsolatedJunctions['highwaylanes'].apply(lambda x: list(set(x)))
+
+    nonIsolatedJunctions['highwaylanesBw'] = nonIsolatedJunctions['highwaylanesBw'].apply(lambda x: list(set(x)))
+
     # nonIsolatedJunctions.to_csv(region + '_junctions_FIVE.csv', index=False, sep="|")
 
     nonIsolatedMerge = pd.merge(nonIsolatedJunctions, junctionClusters, on='neighbour_cluster')
 
     ## c) Plot !
 
-    mapJcts.runAllMapTasks(region, bbCentroid, nonIsolatedMerge, isolatedJunctions, bufferSize, neighbourParam)
+    mapJcts.runAllMapTasks(region, segMap, bbCentroid, nonIsolatedMerge, isolatedJunctions, bufferSize, neighbourParam)
 
     completeJunctions = explodeAndConcat(nonIsolatedMerge, isolatedJunctions)
 

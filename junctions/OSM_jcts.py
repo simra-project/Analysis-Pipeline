@@ -12,7 +12,7 @@ import datetime
 
 pd.set_option('display.max_columns', 200)
 
-import utils
+import utils_jcts as utils
 import dataAcqAndForm_Jcts as dfShizzle
 import findJunctions
 import bufferJcts
@@ -38,7 +38,7 @@ import tidyData_Jcts
 #                   sort by lat resp. lon first depending on the shape of the bounding box 
 #                   (long but slim bounding box: sort by lat first; wide but low bb: sort by lon first) 
 
-def main(region, buffer_size):
+def main(region, buffer_size, segMap):
 
     nodesdf = dfShizzle.metaFunc(utils.paramDict[region]["bounding_box"])
 
@@ -48,7 +48,7 @@ def main(region, buffer_size):
 
     nonIsolatedJunctions, isolatedJunctions = clusterJcts.cluster(bufferedJunctionsDf, utils.paramDict[region]["neighbour_param"], utils.paramDict[region]["sorting_params"])
 
-    completeJunctions = tidyData_Jcts.tidyItUp(region, utils.paramDict[region]["centroid"], nonIsolatedJunctions, isolatedJunctions, buffer_size, utils.paramDict[region]["sorting_params"])
+    completeJunctions = tidyData_Jcts.tidyItUp(region, segMap, utils.paramDict[region]["centroid"], nonIsolatedJunctions, isolatedJunctions, buffer_size, utils.paramDict[region]["sorting_params"])
 
     # Write to pickle for future use
 

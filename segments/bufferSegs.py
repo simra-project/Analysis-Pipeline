@@ -49,7 +49,7 @@ def roadWidth (roadType, buffer_size) :
                  'path': 2.5,
                  'cycleway': 1.5
              }
-         return (buffer_size * switcher.get(roadType, 6.5))
+         return (buffer_size * switcher.get(roadType[0], 6.5))
 
 # A little more cumbersome as in case of the junctions, we have to differentiate when creating 2D-shapes 
 # from the segment data: there might be segments of length 1, which LineStrings can't be projected from (only Points).

@@ -14,7 +14,7 @@ import requests
 import json
 import datetime
 
-import utils
+import utils_segs as utils
 import dataAcqAndForm_Segs as dfShizzle
 import segmentizeAndEnrich
 import bufferSegs
@@ -52,7 +52,7 @@ def main(region, buffer_size):
 
     oddballs, normies = clusterSegs.cluster(region, bufferedDf, junctionsdf)
 
-    completeSegments = tidyData_Segs.tidyItUp(region, oddballs, normies)
+    completeSegments, segMap = tidyData_Segs.tidyItUp(region, oddballs, normies)
     
     # Write to pickle for future use
 
@@ -67,17 +67,17 @@ def main(region, buffer_size):
 
     completeSegments.to_pickle(path)
 
-    return completeSegments
+    return completeSegments, segMap
 
 if __name__ == "__main__":
 
     start_time = time.time()
 
-    completeSegs = main("augsburg",1)
+    completeSegs, segMap = main("bern",1)
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
-    file_name = f"augsburg_segments_complete_{datetime.date.today()}.csv"
+    file_name = f"bern_segments_complete_{datetime.date.today()}.csv"
 
     path = utils.getSubDirPath(file_name, "csv_data")
 

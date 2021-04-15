@@ -9,7 +9,7 @@ import manualMergePrep_segs
 
 import manualMergeTool_segs
 
-import utils
+import utils_segs as utils
 
 # ****************************************************************************
 

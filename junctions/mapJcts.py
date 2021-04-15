@@ -15,7 +15,7 @@ import os
 
 import datetime
 
-import utils # internal import
+import utils_jcts as utils
 
 #*******************************************************************************************************************
 # (*) Plot polygons onto map.
@@ -23,7 +23,7 @@ import utils # internal import
 # This variant follows the following approach to plotting MultiPolygons:
 # extract individual Polygons from MultiPolygons and plot these. 
 
-def extractAndPlot (extractableShape, mmaapp, style, crs):
+def extractAndPlot (extractableShape, mmaapp, style, crs, highwaytype, highwayname, jctId, neighbour_cluster):
 
     if isinstance(extractableShape, Polygon):
         
@@ -33,7 +33,7 @@ def extractAndPlot (extractableShape, mmaapp, style, crs):
             
         poly_geoDf = gpd.GeoDataFrame(index=[0], crs=crs, geometry=[poly_swapped])
         
-        folium.GeoJson(poly_geoDf, style_function=lambda x: style).add_to(mmaapp)
+        folium.GeoJson(poly_geoDf, style_function=lambda x: style, tooltip=f"Highwayname: {highwayname}, highwatype: {highwaytype}, id: {jctId}, neighbour cluster: {neighbour_cluster}").add_to(mmaapp)
             
     elif isinstance(extractableShape, MultiPolygon):
             
@@ -49,22 +49,22 @@ def plotPolys_B (df, geomCol, map, style):
     
     for ind in df.index:
 
-        extractAndPlot(df.at[ind, geomCol], map, style, crs)
+        extractAndPlot(df.at[ind, geomCol], map, style, crs, df.at[ind, 'highwaytypes'], df.at[ind, 'highwaynames'], df.at[ind, 'id'], df.at[ind, 'neighbour_cluster'])
 
 #*******************************************************************************************************************
 # (*) Execute all the map jobs in logical order.
 
-def runAllMapTasks (region, bbCentroid, nonIsolatedJunctions, isolatedJunctions, bufferSize, neighbourParam):
+def runAllMapTasks (region, segMap, bbCentroid, nonIsolatedJunctions, isolatedJunctions, bufferSize, neighbourParam):
 
     # I.) Set up our maps
 
-    myMap = folium.Map(location=bbCentroid, zoom_start=15, tiles='cartodbpositron')
+    # myMap = folium.Map(location=bbCentroid, zoom_start=15, tiles='cartodbpositron')
 
     # II.) Plot polys onto their respective maps
 
-    plotPolys_B(nonIsolatedJunctions, 'geometry', myMap, {'fillColor': '#ff1493', 'lineColor': '#F5FFFA'})
+    plotPolys_B(nonIsolatedJunctions, 'geometry', segMap, {'fillColor': '#ff1493', 'lineColor': '#F5FFFA'})
 
-    plotPolys_B(isolatedJunctions, 'poly_geometry', myMap, {'fillColor': '#7FFF00', 'lineColor': '#F5FFFA'})
+    plotPolys_B(isolatedJunctions, 'poly_geometry', segMap, {'fillColor': '#7FFF00', 'lineColor': '#F5FFFA'})
 
     # III.) Export map as html
 
@@ -72,4 +72,4 @@ def runAllMapTasks (region, bbCentroid, nonIsolatedJunctions, isolatedJunctions,
 
     path = utils.getSubDirPath(file_name, "html_maps")
 
-    myMap.save(path)
+    segMap.save(path)

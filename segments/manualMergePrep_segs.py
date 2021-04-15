@@ -25,7 +25,7 @@ import OSM_segs
 
 import tidyData_Segs
 
-import utils
+import utils_segs as utils
 
 #*******************************************************************************************************************
 # (1) Check where junctions have been assigned to different clusters depending on buffer size. 

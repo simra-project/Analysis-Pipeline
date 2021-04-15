@@ -8,7 +8,7 @@ from shapely.geometry import Point
 
 import os
 
-import utils # internal import
+import utils_jcts as utils
 
 relevantTypes = ['primary','secondary','secondary_link','tertiary','tertiary_link','living_street','residential']
 

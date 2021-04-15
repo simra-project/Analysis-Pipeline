@@ -19,7 +19,7 @@ import os
 #     In this script, we'll require from utils functionality that ensures all files (.csv, .html)
 #     will be written to the junctions subdirectory and not its parent directory.
 
-import utils
+import utils_jcts as utils
 
 # (2) Manual cluster preparation tool:
 #     Provides the data required for manual cluster correction.

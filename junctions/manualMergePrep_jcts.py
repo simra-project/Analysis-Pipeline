@@ -21,7 +21,7 @@ import OSM_jcts
 
 import tidyData_Jcts
 
-import utils
+import utils_jcts as utils
 
 #*******************************************************************************************************************
 # (1) Check where junctions have been assigned to different clusters depending on buffer size. 

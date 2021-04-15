@@ -7,7 +7,7 @@ from geopandas import GeoSeries
 
 from shapely.geometry import Point
 
-import utils
+import utils_segs as utils
 
 import pathos
 
@@ -34,7 +34,7 @@ def oddballWrapper (segmentsdf, jctsdf):
 
     # these are ALL junctions (i.e., intersections of at least two highways, irrespective of their type)
 
-    jctids = jctsdf['id'].values 
+    #jctids = jctsdf['id'].values 
 
     # now we also need the LARGER junctions (i.e., intersections of at least two highways of a larger type)
 
@@ -46,23 +46,13 @@ def oddballWrapper (segmentsdf, jctsdf):
 
     def findOddballs(highwaytype, nodes):
 
-        lastNodeIdx = len(nodes) - 1
-
         if highwaytype in ['unclassified', 'pedestrian', 'cycleway']:
 
-            if not(nodes[0] in jctids):
-            
-                return True
-        
-            elif not(nodes[lastNodeIdx] in jctids):
-        
-                return True
-            
-            else:
-            
-                return False
+            return False
 
         else:
+    
+            lastNodeIdx = len(nodes) - 1
             
             if not(nodes[0] in larger_jctids):
                 
@@ -140,43 +130,16 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
         if polyOne == polyTwo:
             
             return False
-
-        # Now checking for junctions in the two segments' intersection. If both segments belong to highways
-        # of a smaller type, we're considering all types of junctions when looking for junctions in this 
-        # intersection; otherwise, we're only checking for larger junctions.
-
-        smaller_highway_types = ['unclassified', 'pedestrian', 'cycleway']
         
         intersection = polyOne.intersection(polyTwo)
-
-        if (outerHighwayType in smaller_highway_types) and (innerHighwayType in smaller_highway_types):
-
-            junctions_in_intersection = junctionpoints[lambda x: x.within(intersection)]
-
-        else: 
-            
-            junctions_in_intersection = larger_junctionpoints[lambda x: x.within(intersection)]
         
-        if junctions_in_intersection.empty:
+        if junctionpoints[lambda x: x.within(intersection)].empty:
                                 
-            # if not isMotorwayLanesIntersecting(outerInd, innerInd):
-
             return True
                                 
         else:
-    
-            '''
 
-            PRINT STATEMENTS FOR DEBUGGING PURPOSES
-
-            if isMotorwayLanesIntersecting(outerInd, innerInd):
-
-                 print("Not merging highwaylanes traveling in opposite directions")
-
-            else:
-
-                print(f"Not merging because of junctions in segment overlap: {junctions_in_intersection}")
-            '''
+            # print("Junction found in segment intersection, not merging!")
 
             return False
 

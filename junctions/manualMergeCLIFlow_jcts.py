@@ -9,7 +9,7 @@ import manualMergePrep_jcts as manualMergePrep
 
 import manualMergeTool_jcts as manualMergeTool
 
-import utils
+import utils_jcts as utils
 
 # ****************************************************************************
 
