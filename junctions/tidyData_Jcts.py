@@ -114,14 +114,24 @@ def tidyItUp(region, segMap, bbCentroid, nonIsolatedJunctions, isolatedJunctions
 
     nonIsolatedJunctions['highwaylanesBw'] = nonIsolatedJunctions['highwaylanesBw'].apply(lambda x: list(set(x)))
 
+    # Same thing for isolatedJunctions
+
+    isolatedJunctions['highwaynames'] = isolatedJunctions['highwaynames'].apply(lambda x: list(set(x)))
+
+    isolatedJunctions['highwaytypes'] = isolatedJunctions['highwaytypes'].apply(lambda x: list(set(x)))
+
+    isolatedJunctions['highwaylanes'] = isolatedJunctions['highwaylanes'].apply(lambda x: list(set(x)))
+
+    isolatedJunctions['highwaylanesBw'] = isolatedJunctions['highwaylanesBw'].apply(lambda x: list(set(x)))
+
     # nonIsolatedJunctions.to_csv(region + '_junctions_FIVE.csv', index=False, sep="|")
 
     nonIsolatedMerge = pd.merge(nonIsolatedJunctions, junctionClusters, on='neighbour_cluster')
 
     ## c) Plot !
 
-    mapJcts.runAllMapTasks(region, segMap, bbCentroid, nonIsolatedMerge, isolatedJunctions, bufferSize, neighbourParam)
+    totalMap = mapJcts.runAllMapTasks(region, segMap, bbCentroid, nonIsolatedMerge, isolatedJunctions, bufferSize, neighbourParam)
 
     completeJunctions = explodeAndConcat(nonIsolatedMerge, isolatedJunctions)
 
-    return completeJunctions
+    return completeJunctions, totalMap

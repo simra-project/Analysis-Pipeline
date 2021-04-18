@@ -41,7 +41,7 @@ def extractAndPlot (extractableShape, mmaapp, style, crs, highwaytype, highwayna
             
         for poly in individualPolys:
         
-            extractAndPlot(poly, mmaapp, style, crs)
+            extractAndPlot(poly, mmaapp, style, crs, highwaytype, highwayname, jctId, neighbour_cluster)
 
 def plotPolys_B (df, geomCol, map, style):
 
@@ -56,20 +56,12 @@ def plotPolys_B (df, geomCol, map, style):
 
 def runAllMapTasks (region, segMap, bbCentroid, nonIsolatedJunctions, isolatedJunctions, bufferSize, neighbourParam):
 
-    # I.) Set up our maps
-
-    # myMap = folium.Map(location=bbCentroid, zoom_start=15, tiles='cartodbpositron')
-
-    # II.) Plot polys onto their respective maps
+    # I.) Plot polys onto map already containing segments
 
     plotPolys_B(nonIsolatedJunctions, 'geometry', segMap, {'fillColor': '#ff1493', 'lineColor': '#F5FFFA'})
 
     plotPolys_B(isolatedJunctions, 'poly_geometry', segMap, {'fillColor': '#7FFF00', 'lineColor': '#F5FFFA'})
 
-    # III.) Export map as html
+    # II.) Return map
 
-    file_name = f'{region}-jcts-map_buf={bufferSize}_np={neighbourParam}_{datetime.date.today()}.html'
-
-    path = utils.getSubDirPath(file_name, "html_maps")
-
-    segMap.save(path)
+    return segMap

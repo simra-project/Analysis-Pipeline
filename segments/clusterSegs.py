@@ -7,9 +7,9 @@ from geopandas import GeoSeries
 
 from shapely.geometry import Point
 
-import utils_segs as utils
+import dask.bag as db
 
-import pathos
+import utils_segs as utils
 
 #*******************************************************************************************************************
 # (1) Find out which ways don't start and/or end with a junction. Wherever that is the case, we want to 
@@ -92,6 +92,8 @@ def oddballWrapper (segmentsdf, jctsdf):
 
 def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
+    unfoldedOddballs.dropna(subset=['highwayname'])
+
     # Sort according to upper left corner; sort by lon (minx) resp lat (maxy) first depending on the bounding box's shape. 
 
     unfoldedOddballs['minx'] = unfoldedOddballs['poly_geometry'].map(lambda p: p.bounds[0])
@@ -125,7 +127,7 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
     ##                         intersects with WITHOUT a junction being contained in that intersection, this function
     ##                         checks for junctions in intersections.
 
-    def isIntersectionValid(polyOne, outerInd, outerHighwayType, polyTwo, innerInd, innerHighwayType):
+    def isIntersectionValid(polyOne, outerInd, outerHighwayType, outerHighwayName, polyTwo, innerInd, innerHighwayType, innerHighwayName):
 
         if polyOne == polyTwo:
             
@@ -134,8 +136,10 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
         intersection = polyOne.intersection(polyTwo)
         
         if junctionpoints[lambda x: x.within(intersection)].empty:
+
+            if outerHighwayName[0] == outerHighwayName[0]:
                                 
-            return True
+                return True
                                 
         else:
 
@@ -146,7 +150,7 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
     ## b) getNeighbours: unsurprisingly, this function assigns each segment its neighbours (definition of 'neighbour'
     ##                   in this context: see above)
 
-    def getNeighbours(outerInd, outerPoly, outerHighwayType):
+    def getNeighbours(outerInd, outerPoly, outerHighwayType, outerHighwayName):
         
         # Use buffer trick if polygon is invalid
         # https://stackoverflow.com/questions/13062334/polygon-intersection-error-in-shapely-shapely-geos-topologicalerror-the-opera
@@ -161,7 +165,7 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
         # (1) polygon intersects
         # (2) intersection is valid
  
-        neighs = unfoldedOddballs[unfoldedOddballs.apply(lambda row: (row['poly_geometry'].intersects(outerPoly) and isIntersectionValid(outerPoly, outerInd, outerHighwayType, row['poly_geometry'], row.index, row['highwaytype'])), axis=1)]
+        neighs = unfoldedOddballs[unfoldedOddballs.apply(lambda row: (row['poly_geometry'].intersects(outerPoly) and isIntersectionValid(outerPoly, outerInd, outerHighwayType, outerHighwayName, row['poly_geometry'], row.index, row['highwaytype'], row['highwayname'])), axis=1)]
 
         # Grab indices of the filtered data frame, those are the neighbours 
 
@@ -171,9 +175,21 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    _pp = pathos.pools._ProcessPool()
+    # 18/04: let's use dask's bag data structure for parallel processing.
 
-    unfoldedOddballs['neighbours'] = [x for x in _pp.starmap(getNeighbours, zip(unfoldedOddballs['index'],unfoldedOddballs['poly_geometry'],unfoldedOddballs['highwaytype']))]
+    '''
+    data = zip(unfoldedOddballs['index'],unfoldedOddballs['poly_geometry'],unfoldedOddballs['highwaytype'],unfoldedOddballs['highwayname'])
+
+    list_data = list(data)
+
+    bag = db.from_sequence(list_data, npartitions=100)
+
+    unfoldedOddballs['neighbours'] = [x for x in starmap(getNeighbours, bag)]
+    '''
+
+    data = zip(unfoldedOddballs['index'],unfoldedOddballs['poly_geometry'],unfoldedOddballs['highwaytype'],unfoldedOddballs['highwayname'])
+
+    unfoldedOddballs['neighbours'] = [x for x in starmap(getNeighbours, data)]
 
     return unfoldedOddballs
 

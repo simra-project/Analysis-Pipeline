@@ -67,7 +67,7 @@ def getJunctionsDf(nodesdf, region):
 
     nodesdf.loc[:,'junction'] = [x for x in starmap(identifyjunction, list(zip(nodesdf['highwayids'],nodesdf['highwaytypes'],nodesdf['highwaynames'])))]
 
-    # jcts = ['small_junction','large_junction']
+    # Write junction data to csv
 
     junctionsdf = nodesdf[nodesdf['junction'] != 'no_junction']
 
@@ -82,6 +82,14 @@ def getJunctionsDf(nodesdf, region):
     # Keep the column containing information on the type of junction (small vs. large)
 
     pd.DataFrame(junctionsdf[['junction','id','lat','lon','highwaynames']]).to_csv(path)
+
+    # Also write all nodes to csv for debugging purposes
+
+    file_name_nodes = f"{region}_all_nodes.csv"
+
+    path_nodes = utils.getSubDirPath(file_name_nodes, "csv_data")
+
+    nodesdf.to_csv(path_nodes, index=False, sep="|")
 
     # Now we can get rid of the smaller junctions (only needed in the segments project so
     # it needs to be contained in the 'junctions_for_segs'-df)

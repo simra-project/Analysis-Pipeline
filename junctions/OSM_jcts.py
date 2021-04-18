@@ -48,7 +48,7 @@ def main(region, buffer_size, segMap):
 
     nonIsolatedJunctions, isolatedJunctions = clusterJcts.cluster(bufferedJunctionsDf, utils.paramDict[region]["neighbour_param"], utils.paramDict[region]["sorting_params"])
 
-    completeJunctions = tidyData_Jcts.tidyItUp(region, segMap, utils.paramDict[region]["centroid"], nonIsolatedJunctions, isolatedJunctions, buffer_size, utils.paramDict[region]["sorting_params"])
+    completeJunctions, totalMap = tidyData_Jcts.tidyItUp(region, segMap, utils.paramDict[region]["centroid"], nonIsolatedJunctions, isolatedJunctions, buffer_size, utils.paramDict[region]["sorting_params"])
 
     # Write to pickle for future use
 
@@ -63,7 +63,7 @@ def main(region, buffer_size, segMap):
 
     completeJunctions.to_pickle(path)
 
-    return completeJunctions
+    return completeJunctions, totalMap
 
 if __name__ == "__main__":
 
