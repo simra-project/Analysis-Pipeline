@@ -51,7 +51,8 @@ paramDict = {
         "large_buf_default": 2.75            # large-sized city (> 1 Mio. inhabitants)
     },
     "hannover": {
-        "bounding_box": [9.60443,52.305137,9.918426,52.454335],
+        #"bounding_box": [9.60443,52.305137,9.918426,52.454335],
+        "bounding_box": [9.661692,52.328895,9.800934,52.407792],
         "centroid": [52.3796, 9.7617],
         "neighbour_param": 80,
         "sorting_params": ['lat','lon'],    # square bounding box - sort by upper left corner (although it doesn't really matter).

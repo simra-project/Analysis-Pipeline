@@ -92,8 +92,6 @@ def oddballWrapper (segmentsdf, jctsdf):
 
 def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
-    unfoldedOddballs.dropna(subset=['highwayname'])
-
     # Sort according to upper left corner; sort by lon (minx) resp lat (maxy) first depending on the bounding box's shape. 
 
     unfoldedOddballs['minx'] = unfoldedOddballs['poly_geometry'].map(lambda p: p.bounds[0])
@@ -110,7 +108,6 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
     junctionlats = junctionsdf.lat.values
     junctionlons = junctionsdf.lon.values
-    junctionpoints = GeoSeries(map(Point, zip(junctionlats, junctionlons)))
 
     # now we also need the LARGER junctions (i.e., intersections of at least two highways of a larger type)
 
@@ -118,78 +115,75 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
     larger_junctionlats = larger_jcts.lat.values
     larger_junctionlons = larger_jcts.lon.values
-    larger_junctionpoints = GeoSeries(map(Point, zip(larger_junctionlats, larger_junctionlons)))
+    larger_jctids = larger_jcts['id'].values 
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Define some inner functions we'll need for determining the segments' neighbours.
 
-    ## a) isIntersectionValid: as a neighbouring segment is defined as a segment whose polygon a segments' polygon 
-    ##                         intersects with WITHOUT a junction being contained in that intersection, this function
-    ##                         checks for junctions in intersections.
+    ## a) isIntersectionValid: two segments are neighbours if they share a node at either of their ends, with that
+    #                           node obviously not being a junction. 
 
-    def isIntersectionValid(polyOne, outerInd, outerHighwayType, outerHighwayName, polyTwo, innerInd, innerHighwayType, innerHighwayName):
-
-        if polyOne == polyTwo:
-            
-            return False
+    def sharedNonJunctionNode(outerNodes, innerNodes):
         
-        intersection = polyOne.intersection(polyTwo)
-        
-        if junctionpoints[lambda x: x.within(intersection)].empty:
+        outerLastNodeIdx = len(outerNodes) - 1
 
-            if outerHighwayName[0] == outerHighwayName[0]:
-                                
+        innerLastNodeIdx = len(innerNodes) - 1
+
+        # Scenario 1: the first node belonging to the outer segment is not a junction.
+        #             Check if the inner segment contains this node too (at one of its ends).
+
+        if outerNodes[0] not in larger_jctids:
+
+            if (innerNodes[0] == outerNodes[0] or innerNodes[innerLastNodeIdx] == outerNodes[0]):
+
                 return True
-                                
-        else:
 
-            # print("Junction found in segment intersection, not merging!")
+        if outerNodes[outerLastNodeIdx] not in larger_jctids:
 
-            return False
+            if (innerNodes[0] == outerNodes[outerLastNodeIdx] or innerNodes[innerLastNodeIdx] == outerNodes[outerLastNodeIdx]):
+
+                return True
+
+            else:
+
+                return False
 
     ## b) getNeighbours: unsurprisingly, this function assigns each segment its neighbours (definition of 'neighbour'
     ##                   in this context: see above)
 
-    def getNeighbours(outerInd, outerPoly, outerHighwayType, outerHighwayName):
+    def getNeighbours(outerNodes):
         
-        # Use buffer trick if polygon is invalid
-        # https://stackoverflow.com/questions/13062334/polygon-intersection-error-in-shapely-shapely-geos-topologicalerror-the-opera
-        
-        if not(outerPoly.is_valid):
-            
-            outerPoly = outerPoly.buffer(0)
-
-        unfoldedOddballs['poly_geometry'] = unfoldedOddballs['poly_geometry'].map(lambda p: p if p.is_valid else p.buffer(0))
-        
-        # Filter data frame according to two conditions:
-        # (1) polygon intersects
-        # (2) intersection is valid
+        '''
+        # Filter data frame according to:
+        # Outer row and inner row share a node at either of their ends that is not a junction
  
-        neighs = unfoldedOddballs[unfoldedOddballs.apply(lambda row: (row['poly_geometry'].intersects(outerPoly) and isIntersectionValid(outerPoly, outerInd, outerHighwayType, outerHighwayName, row['poly_geometry'], row.index, row['highwaytype'], row['highwayname'])), axis=1)]
+        neighs = unfoldedOddballs[unfoldedOddballs.apply(lambda row: sharedNonJunctionNode(outerNodes, row['segment_nodes_ids']), axis=1)]
 
         # Grab indices of the filtered data frame, those are the neighbours 
 
         neighbours = neighs.index.tolist()
+
+        '''
+
+        # Iterative version for testing purposes
+
+        neighbours = []
+
+        for index, row in unfoldedOddballs.iterrows(): 
+
+            if sharedNonJunctionNode(outerNodes, row['segment_nodes_ids']):
+
+                neighbours.append(index)
                         
         return neighbours
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    # 18/04: let's use dask's bag data structure for parallel processing.
+    unfoldedOddballs = unfoldedOddballs.dropna(subset=['segment_nodes_ids'])
 
-    '''
-    data = zip(unfoldedOddballs['index'],unfoldedOddballs['poly_geometry'],unfoldedOddballs['highwaytype'],unfoldedOddballs['highwayname'])
+    print(unfoldedOddballs['segment_nodes_ids'].isnull().values.any())
 
-    list_data = list(data)
-
-    bag = db.from_sequence(list_data, npartitions=100)
-
-    unfoldedOddballs['neighbours'] = [x for x in starmap(getNeighbours, bag)]
-    '''
-
-    data = zip(unfoldedOddballs['index'],unfoldedOddballs['poly_geometry'],unfoldedOddballs['highwaytype'],unfoldedOddballs['highwayname'])
-
-    unfoldedOddballs['neighbours'] = [x for x in starmap(getNeighbours, data)]
+    unfoldedOddballs['neighbours'] = unfoldedOddballs['segment_nodes_ids'].map(getNeighbours)
 
     return unfoldedOddballs
 
@@ -324,7 +318,7 @@ def cluster (region, segmentsdf, junctionsdf):
 
     # neighbour_param = utils.paramDict[region]["neighbour_param"]
 
-     # I.) Determine which segments are 'oddballs' (don't start and/or end with a junction)
+    # I.) Determine which segments are 'oddballs' (don't start and/or end with a junction)
 
     oddballs, normies = oddballWrapper(segmentsdf, junctionsdf)
 
