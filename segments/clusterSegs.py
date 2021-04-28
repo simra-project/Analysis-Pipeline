@@ -1,13 +1,12 @@
 
 from itertools import starmap
 
-from itertools import product
-
 from geopandas import GeoSeries
 
 from shapely.geometry import Point
 
-import dask.bag as db
+import numpy as np
+from multiprocessing import  Pool
 
 import utils_segs as utils
 
@@ -151,25 +150,11 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
     ## b) getNeighbours: unsurprisingly, this function assigns each segment its neighbours (definition of 'neighbour'
     ##                   in this context: see above)
 
-    def getNeighbours(outerNodes):
+    def getNeighbours(outerNodes, unfoldedOddballs_):
         
-        '''
-        # Filter data frame according to:
-        # Outer row and inner row share a node at either of their ends that is not a junction
- 
-        neighs = unfoldedOddballs[unfoldedOddballs.apply(lambda row: sharedNonJunctionNode(outerNodes, row['segment_nodes_ids']), axis=1)]
-
-        # Grab indices of the filtered data frame, those are the neighbours 
-
-        neighbours = neighs.index.tolist()
-
-        '''
-
-        # Iterative version for testing purposes
-
         neighbours = []
 
-        for index, row in unfoldedOddballs.iterrows(): 
+        for index, row in unfoldedOddballs_.iterrows(): 
 
             if sharedNonJunctionNode(outerNodes, row['segment_nodes_ids']):
 
@@ -179,11 +164,13 @@ def findNeighbours(unfoldedOddballs, sortingParams, junctionsdf):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    '''
     unfoldedOddballs = unfoldedOddballs.dropna(subset=['segment_nodes_ids'])
 
     print(unfoldedOddballs['segment_nodes_ids'].isnull().values.any())
 
     unfoldedOddballs['neighbours'] = unfoldedOddballs['segment_nodes_ids'].map(getNeighbours)
+    '''
 
     return unfoldedOddballs
 
@@ -321,6 +308,8 @@ def cluster (region, segmentsdf, junctionsdf):
     # I.) Determine which segments are 'oddballs' (don't start and/or end with a junction)
 
     oddballs, normies = oddballWrapper(segmentsdf, junctionsdf)
+
+    oddballs.to_pickle('oddball_pickle')
 
     # II.) Assign each oddball segment its neighbours (other segments it intersects with without a junction being contained
     #      in that intersection).

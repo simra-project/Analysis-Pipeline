@@ -24,11 +24,11 @@ def getSubDirPath (file_):
 
 # Execute segs script
 
-completeSegs, segMap = OSM_segs.main("hannover",1)
+completeSegs, segMap = OSM_segs.main("wedding",1)
 
 # Save segs csv
 
-file_name_segs = f"hannover_segments_complete_{datetime.date.today()}.csv"
+file_name_segs = f"wedding_segments_complete_{datetime.date.today()}.csv"
 
 path_segs = getSubDirPath(file_name_segs)
 
@@ -36,11 +36,11 @@ completeSegs.to_csv(path_segs, index=False, sep="|")
 
 # Execute jcts script
 
-completeJunctions, totalMap = OSM_jcts.main("hannover",2, segMap)
+completeJunctions, totalMap = OSM_jcts.main("wedding",2, segMap)
 
 # Save jcts csv
 
-file_name_jcts = f"hannover_junctions_complete_{datetime.date.today()}.csv"
+file_name_jcts = f"wedding_junctions_complete_{datetime.date.today()}.csv"
 
 path_jcts = getSubDirPath(file_name_jcts)
 
@@ -48,7 +48,7 @@ completeJunctions.to_csv(path_jcts, index=False, sep="|")
 
 # Save jcts map
 
-file_name_map = f'hannover-segs-jcts_{datetime.date.today()}.html'
+file_name_map = f'wedding-segs-jcts_{datetime.date.today()}.html'
 
 map_path = getSubDirPath(file_name_map)
 
