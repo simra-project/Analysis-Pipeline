@@ -10,6 +10,7 @@ import os
 import datetime
 import sys
 import argparse
+import time
 
 pd.set_option('display.max_columns', 200)
 
@@ -80,7 +81,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    start_time = time.time()
+
     completeJunctions = main(args.region, args.buf_size)
+
+    print("--- %s seconds ---" % (time.time() - start_time))
 
     file_name = f"{args.region}_junctions_complete_{datetime.date.today()}.csv"
 
